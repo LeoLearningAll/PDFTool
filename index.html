@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDFTool - PDF拆分与合并工具</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:"Microsoft YaHei",Arial,sans-serif;background:#f4f6f8;color:#222}.header{height:64px;background:#00b140;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:0 2px 8px rgba(0,0,0,.12)}.logo{font-size:22px;font-weight:700}.sub{font-size:13px;opacity:.9}.wrap{max-width:1220px;margin:22px auto;padding:0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,.08)}.title{font-size:18px;color:#00b140;font-weight:700;margin-bottom:15px}.drop{border:2px dashed #00b140;border-radius:10px;padding:44px 20px;text-align:center;cursor:pointer;transition:.2s;background:#fbfffc}.drop.hover{background:#eefcf2;transform:scale(1.01)}.files{margin-top:15px;max-height:220px;overflow:auto}.file{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:14px}.file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:75%}.file-actions button{margin-left:6px;border:1px solid #ccc;background:white;border-radius:4px;cursor:pointer;padding:3px 7px}.file-actions button:hover{border-color:#00b140;color:#00b140}.btn{background:#00b140;color:#fff;border:none;padding:12px 18px;border-radius:6px;cursor:pointer;margin-top:15px;font-weight:700}.btn.secondary{background:#606266}.btn:hover{filter:brightness(.95)}.row{display:flex;gap:10px;flex-wrap:wrap}.tip{margin-top:20px;color:#666;font-size:13px;line-height:1.7}.status{margin-top:12px;font-size:13px;color:#00b140}.warn{color:#b26a00}.footer{text-align:center;color:#888;font-size:12px;margin-top:28px}@media(max-width:900px){.grid{grid-template-columns:1fr}.header{height:auto;padding:14px 18px;align-items:flex-start;gap:6px;flex-direction:column}}
+</style>
+<script src="./pdf-lib.min.js"></script>
+</head>
+<body>
+<div class="header"><div class="logo">PDFTool 绿色版</div><div class="sub">PDF 合并 / 拆分 / 本地处理 / 支持 VBA 调用打开</div></div>
+<div class="wrap">
+  <div class="grid">
+    <div class="card">
+      <div class="title">PDF 合并</div>
+      <div class="drop" id="mergeDrop">拖拽多个 PDF 到此处<br>或点击选择文件</div>
+      <input type="file" id="mergeInput" multiple accept="application/pdf" hidden>
+      <div class="files" id="mergeList"></div>
+      <div class="row"><button class="btn" onclick="mergePDF()">开始合并</button><button class="btn secondary" onclick="clearMerge()">清空列表</button></div>
+      <div id="mergeStatus" class="status"></div>
+    </div>
+    <div class="card">
+      <div class="title">PDF 拆分</div>
+      <div class="drop" id="splitDrop">拖拽单个 PDF 到此处<br>或点击选择文件</div>
+      <input type="file" id="splitInput" accept="application/pdf" hidden>
+      <div class="files" id="splitList"></div>
+      <div class="row"><button class="btn" onclick="splitPDF()">按页拆分</button><button class="btn secondary" onclick="clearSplit()">清空文件</button></div>
+      <div id="splitStatus" class="status"></div>
+    </div>
+  </div>
+  <div class="tip"><b>离线说明：</b>请确保完整的 <code>pdf-lib.min.js</code> 已放在工程根目录。<br><b>打包说明：</b>上传 GitHub 后，Actions 会生成绿色版 <code>PDFTool-1.0.0-portable.exe</code>。<br><b>VBA 调用：</b><code>Shell "C:\\PDFTool\\PDFTool.exe", vbNormalFocus</code></div>
+  <div class="footer">PDFTool Electron Portable</div>
+</div>
+<script>
+let mergeFiles=[];let splitFile=null;
+function bind(drop,input,multi){drop.onclick=()=>input.click();input.onchange=e=>handle(e.target.files,multi);['dragenter','dragover'].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.add('hover')}));['dragleave','drop'].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.remove('hover')}));drop.addEventListener('drop',e=>handle(e.dataTransfer.files,multi));}
+function handle(files,multi){const pdfs=[...files].filter(f=>f.name.toLowerCase().endsWith('.pdf') || f.type.includes('pdf'));if(multi){mergeFiles=pdfs;renderMerge();}else{splitFile=pdfs[0]||null;renderSplit();}}
+function renderMerge(){const box=document.getElementById('mergeList');box.innerHTML=mergeFiles.map((f,i)=>`<div class="file"><span class="file-name">${i+1}. ${escapeHtml(f.name)}</span><span class="file-actions"><button onclick="moveFile(${i},-1)">上移</button><button onclick="moveFile(${i},1)">下移</button><button onclick="removeFile(${i})">删除</button></span></div>`).join('');document.getElementById('mergeStatus').textContent=mergeFiles.length?`已选择 ${mergeFiles.length} 个 PDF`:'';}
+function renderSplit(){document.getElementById('splitList').innerHTML=splitFile?`<div class="file"><span class="file-name">${escapeHtml(splitFile.name)}</span></div>`:'';document.getElementById('splitStatus').textContent=splitFile?'已选择 1 个 PDF':'';}
+function moveFile(i,dir){const j=i+dir;if(j<0||j>=mergeFiles.length)return;[mergeFiles[i],mergeFiles[j]]=[mergeFiles[j],mergeFiles[i]];renderMerge();}
+function removeFile(i){mergeFiles.splice(i,1);renderMerge();}
+function clearMerge(){mergeFiles=[];document.getElementById('mergeInput').value='';renderMerge();}
+function clearSplit(){splitFile=null;document.getElementById('splitInput').value='';renderSplit();}
+function save(bytes,name){const blob=new Blob([bytes],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function checkLib(){if(!window.PDFLib){alert('未找到 pdf-lib.min.js。请将完整 pdf-lib.min.js 放在程序同一目录或工程根目录。');return false;}return true;}
+async function mergePDF(){if(!checkLib())return;if(!mergeFiles.length){alert('请选择需要合并的 PDF 文件');return;}const status=document.getElementById('mergeStatus');status.textContent='正在合并，请稍候...';try{const doc=await PDFLib.PDFDocument.create();for(const f of mergeFiles){const pdf=await PDFLib.PDFDocument.load(await f.arrayBuffer());const pages=await doc.copyPages(pdf,pdf.getPageIndices());pages.forEach(p=>doc.addPage(p));}save(await doc.save(),'merged.pdf');status.textContent='合并完成，文件已下载。';}catch(err){console.error(err);status.innerHTML='<span class="warn">合并失败：'+escapeHtml(err.message||String(err))+'</span>';}}
+async function splitPDF(){if(!checkLib())return;if(!splitFile){alert('请选择需要拆分的 PDF 文件');return;}const status=document.getElementById('splitStatus');status.textContent='正在拆分，请稍候...';try{const pdf=await PDFLib.PDFDocument.load(await splitFile.arrayBuffer());const count=pdf.getPageCount();for(let i=0;i<count;i++){const nd=await PDFLib.PDFDocument.create();const [p]=await nd.copyPages(pdf,[i]);nd.addPage(p);save(await nd.save(),`page_${i+1}.pdf`);}status.textContent=`拆分完成，共 ${count} 页。`;}catch(err){console.error(err);status.innerHTML='<span class="warn">拆分失败：'+escapeHtml(err.message||String(err))+'</span>';}}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+bind(document.getElementById('mergeDrop'),document.getElementById('mergeInput'),true);bind(document.getElementById('splitDrop'),document.getElementById('splitInput'),false);
+</script>
+</body>
+</html>

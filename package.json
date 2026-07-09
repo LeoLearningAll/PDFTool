@@ -1,0 +1,45 @@
+{
+  "name": "pdf-tool-electron-portable",
+  "version": "1.0.0",
+  "description": "Offline PDF merge and split tool. Build portable Windows EXE via GitHub Actions.",
+  "main": "main.js",
+  "author": "Leo LIAO",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable --publish never",
+    "build:dir": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.leo.pdftool",
+    "productName": "PDFTool",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "pdf-lib.min.js",
+      "README.md"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "PDFTool-${version}-portable.exe"
+    }
+  }
+}
