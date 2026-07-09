@@ -1,1 +1,45 @@
+name: Build Portable Windows EXE
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-portable-exe:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Check pdf-lib exists
+        shell: pwsh
+        run: |
+          if ((Test-Path "pdf-lib.min.js") -eq $false) {
+            Write-Error "Missing pdf-lib.min.js. Please put the full pdf-lib.min.js in the repository root."
+          }
+          $size = (Get-Item "pdf-lib.min.js").Length
+          if ($size -lt 100000) {
+            Write-Error "pdf-lib.min.js looks like a placeholder or incomplete file. Please replace it with the full library file."
+          }
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build portable Windows EXE
+        run: npm run build
+
+      - name: Upload portable EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDFTool-portable-windows-exe
+          path: dist/*.exe
